@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AECK - Chọn sách</title>
+    <link rel="preconnect" href="https://script.google.com" crossorigin>
+    <link rel="preconnect" href="https://docs.google.com" crossorigin>
+    <link rel="stylesheet" href="assets/style.css" />
+    <link rel="icon" href="assets/logo-square.ico" type="image/x-icon" />
+    <meta property="og:image" content="assets/og-image.png" />
+    <script disable-devtool-auto src="https://cdn.jsdelivr.net/npm/disable-devtool@latest"></script>
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand"><img class="logo" src="assets/logo.png" alt="AECK"/></div>
+      <div class="spacer"></div>
+      <div class="actions">
+        <button id="statusBadge" class="badge" title="Trạng thái tài khoản">Free</button>
+        <button id="statusToggle" class="caret" aria-label="Mở menu">▾</button>
+        <div id="statusMenu" class="dropdown"></div>
+      </div>
+    </header>
+    <main class="container">
+      <h2>Chọn loại sách muốn tra cứu</h2>
+      <section class="card grid">
+        <a class="tile" href="sach_1000.html">
+          <div class="tile-title">ID 1000 câu hỏi Tư duy Toán học</div>
+          <div class="tile-sub">Tra cứu video theo ID</div>
+        </a>
+      </section>
+    </main>
+    <script src="assets/config.js" defer></script>
+    <script src="assets/auth.js" defer></script>
+    <script>
+      window.addEventListener('DOMContentLoaded', async () => {
+        // Kiểm tra đăng nhập
+        const session = window.Auth.getSession();
+        if (!session) {
+          window.location.replace('index.html');
+          return;
+        }
+
+        const statusBadge = document.getElementById('statusBadge');
+        const statusToggle = document.getElementById('statusToggle');
+        const statusMenu = document.getElementById('statusMenu');
+        
+        // Kiểm tra và hiển thị trạng thái tài khoản
+        try {
+          const accounts = await window.Sheets.getAccounts();
+          const userAccount = accounts.find(acc => 
+            window.Auth.normalizeEmail(acc.email) === window.Auth.normalizeEmail(session.email)
+          );
+          
+          if (userAccount) {
+            const isPremium = userAccount.premium === 'TRUE' || userAccount.premium === true;
+            statusBadge.textContent = isPremium ? 'Premium' : 'Free';
+            if (isPremium) {
+              statusBadge.style.background = 'rgba(205, 22, 39, 0.2)';
+              statusBadge.style.fontWeight = '600';
+            }
+          }
+        } catch (err) {
+          console.error('Không thể kiểm tra trạng thái tài khoản:', err);
+          statusBadge.textContent = 'Free';
+        }
+        
+        // Xử lý dropdown menu
+        statusToggle.addEventListener('click', () => {
+          statusToggle.classList.toggle('rotate');
+          statusMenu.classList.toggle('show');
+        });
+
+        // Thêm menu đăng xuất
+        statusMenu.innerHTML = `
+          <button class="menu-item" id="logoutBtn">Đăng xuất</button>
+        `;
+
+        // Xử lý đăng xuất
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+          window.Auth.logout();
+          window.location.replace('index.html');
+        });
+
+        // Đóng dropdown khi click ra ngoài
+        document.addEventListener('click', (e) => {
+          if (!statusToggle.contains(e.target) && !statusMenu.contains(e.target)) {
+            statusToggle.classList.remove('rotate');
+            statusMenu.classList.remove('show');
+          }
+        });
+      });
+    </script>
+  </body>
+  </html>

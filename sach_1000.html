@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AECK ID - Sách ID 1000</title>
+    <link rel="preconnect" href="https://script.google.com" crossorigin>
+    <link rel="preconnect" href="https://docs.google.com" crossorigin>
+    <link rel="stylesheet" href="assets/style.css" />
+    <link rel="icon" href="assets/logo-square.ico" type="image/x-icon" />
+    <meta property="og:image" content="assets/og-image.png" />
+    <script disable-devtool-auto src="https://cdn.jsdelivr.net/npm/disable-devtool@latest"></script>
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand"><img class="logo" src="assets/logo.png" alt="AECK"/></div>
+      <div class="spacer"></div>
+      <div class="actions">
+        <button id="logoutBtn" class="badge free" title="Nhấn để đăng nhập">Free</button>
+        <button id="statusToggle" class="caret" aria-label="Mở menu">▾</button>
+        <div id="statusMenu" class="dropdown"></div>
+      </div>
+    </header>
+    <main class="container">
+      <section class="card">
+        <div class="backbar" style="margin-bottom:12px">
+                <a class="link" href="home.html"><span class="arrow">←</span>Quay lại</a>
+        </div>
+        <h2 class="search-title">ID 1000 câu hỏi Tư duy Toán học</h2>
+        <form id="searchForm" class="inline">
+          <label style="flex:1;min-width:240px">Nhập ID câu hỏi
+            <input id="qid" type="text" placeholder="AECKxxxxxxx" required autocomplete="off" autocapitalize="off" />
+          </label>
+          <button type="submit">Tra cứu</button>
+        </form>
+        <p id="status" class="msg"></p>
+        <div id="result" class="viewer"></div>
+      </section>
+    </main>
+
+    <script src="assets/config.js" defer></script>
+    <script src="assets/sheets.js" defer></script>
+    <script src="assets/auth.js" defer></script>
+    <script>
+      window.addEventListener('DOMContentLoaded', () => {
+        // Badge + dropdown actions (login/logout)
+        const logoutBtn = document.getElementById('logoutBtn');
+        const toggle = document.getElementById('statusToggle');
+        const menu = document.getElementById('statusMenu');
+        function loggedIn() { return !!(window.Auth && window.Auth.getSession && window.Auth.getSession()); }
+        function renderMenu() {
+          const ok = loggedIn();
+          menu.innerHTML = ok
+            ? '<button class="menu-item btn-sec" id="menuLogout">Đăng xuất</button>'
+            : '<button class="menu-item btn-sec" id="menuLogin">Đăng nhập</button>';
+          const actionBtn = document.getElementById(ok ? 'menuLogout' : 'menuLogin');
+          actionBtn.onclick = ok
+            ? () => { window.Auth.logout(); window.location.href = 'index.html'; }
+            : () => { window.location.href = 'login.html'; };
+        }
+        function setBadge() {
+          const ok = loggedIn();
+          logoutBtn.className = 'badge ' + (ok ? 'premium' : 'free');
+          logoutBtn.textContent = ok ? 'Premium' : 'Free';
+          logoutBtn.title = ok ? 'Đang đăng nhập (nhấn để đăng xuất)' : 'Nhấn để đăng nhập';
+          logoutBtn.onclick = ok
+            ? () => { window.Auth.logout(); window.location.href = 'index.html'; }
+            : () => { window.location.href = 'login.html'; };
+        }
+        setBadge();
+        renderMenu();
+        toggle.onclick = () => { toggle.classList.toggle('rotate'); menu.classList.toggle('show'); };
+        document.addEventListener('click', (e) => { if (!menu.contains(e.target) && e.target !== toggle) { menu.classList.remove('show'); toggle.classList.remove('rotate'); } });
+
+        const statusEl = document.getElementById('status');
+        const resultEl = document.getElementById('result');
+
+        let cacheMap = null;
+        async function ensureData() {
+          if (cacheMap) return cacheMap;
+          statusEl.innerHTML = '<span class="spinner"></span> Đang tải dữ liệu…';
+          const map = await window.Sheets.getSach1000Map();
+          cacheMap = map;
+          statusEl.textContent = '';
+          return cacheMap;
+        }
+
+        function showMessage(text) {
+          resultEl.innerHTML = `<div class="placeholder">${text}</div>`;
+        }
+
+        function showEmbed(link) {
+          if (link && typeof link === 'object' && 'link' in link) {
+            link = link.link;
+          }
+          if (!link) { showMessage('Câu hỏi đang được cập nhật'); return; }
+          const safe = String(link || '').replace(/\"/g, '&quot;');
+          resultEl.innerHTML = `
+            <div class="responsive-iframe">
+              <iframe src="${safe}" frameborder="0" allowfullscreen loading="lazy"></iframe>
+            </div>`;
+        }
+
+        // Debounce input (no persistence)
+        let debounceTimer = null;
+        document.getElementById('qid').value = '';
+        document.getElementById('qid').addEventListener('input', () => {
+          clearTimeout(debounceTimer);
+          debounceTimer = setTimeout(() => {
+            const v = document.getElementById('qid').value.trim();
+            if (v.length >= 8) formSubmit();
+          }, 350);
+        });
+
+        async function formSubmit() {
+          const id = document.getElementById('qid').value.trim().toUpperCase();
+          if (!id) return;
+          try {
+            if (window.APP_CONFIG.API_BASE && window.Sheets.getLinkForSach1000) {
+              statusEl.innerHTML = '<span class="spinner"></span> Đang tra cứu…';
+              let payload = await window.Sheets.getLinkForSach1000(id); // {link, status}
+              statusEl.textContent = '';
+              if (!payload && window.APP_CONFIG.USE_CSV_FALLBACK) {
+                const map = await ensureData();
+                const obj = map.get(id);
+                payload = obj ? obj : null;
+              }
+              if (!payload) { statusEl.textContent = 'Không thể kết nối API. Vui lòng thử lại.'; return; }
+              if (!payload || !payload.link) { showMessage('Câu hỏi đang được cập nhật'); return; }
+              const status = String(payload.status || '').toUpperCase();
+              const needLogin = status === 'VIP' && !window.Auth.getSession?.();
+              if (needLogin) { showVipPrompt(); return; }
+              showEmbed(payload.link);
+              return;
+            }
+            const map = await ensureData();
+            const obj = map.get(id);
+            if (!obj || !obj.link) { showMessage('Câu hỏi đang được cập nhật'); return; }
+            const status = String(obj.status || '').toUpperCase();
+            const needLogin = status === 'VIP' && !window.Auth.getSession?.();
+            if (needLogin) { showVipPrompt(); return; }
+            showEmbed(obj.link); statusEl.textContent = '';
+          } catch (err) {
+            statusEl.textContent = 'Không thể tải dữ liệu. Vui lòng thử lại.';
+            console.error(err);
+          }
+        }
+
+        document.getElementById('searchForm').addEventListener('submit', async (e) => {
+          e.preventDefault();
+          formSubmit();
+        });
+
+        function showVipPrompt() {
+          resultEl.innerHTML = `<div class="placeholder">Nội dung VIP — vui lòng đăng nhập để xem.<div class="inline-actions"><button id="inlineLogin" type="button">Đăng nhập</button></div></div>`;
+          document.getElementById('inlineLogin').onclick = () => { window.location.href = 'login.html'; };
+        }
+      });
+    </script>
+  </body>
+  </html>

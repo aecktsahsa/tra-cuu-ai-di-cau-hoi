@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AECK ID</title>
+    <link rel="preconnect" href="https://script.google.com" crossorigin>
+    <link rel="preconnect" href="https://docs.google.com" crossorigin>
+    <link rel="stylesheet" href="assets/style.css" />
+    <link rel="icon" href="assets/logo-square.ico" type="image/x-icon" />
+    <meta name="description" content="Tra cứu ID câu hỏi và xem video bài giảng." />
+    <meta property="og:title" content="Tra cứu sách AECK" />
+    <meta property="og:description" content="Tra cứu ID câu hỏi và xem video bài giảng." />
+    <meta property="og:image" content="assets/og-image.png" />
+    <script disable-devtool-auto src="https://cdn.jsdelivr.net/npm/disable-devtool@latest"></script>
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand"><img class="logo" src="assets/logo.png" alt="AECK"/></div>
+      <div class="spacer"></div>
+      <div class="actions">
+        <button id="statusBadge" class="badge free" title="Nhấn để đăng nhập">Free</button>
+        <button id="statusToggle" class="caret" aria-label="Mở menu">▾</button>
+        <div id="statusMenu" class="dropdown"></div>
+      </div>
+    </header>
+    <main class="container">
+      <h2>Chọn loại sách muốn tra cứu</h2>
+      <section class="card grid">
+        <a class="tile" href="sach_1000.html">
+          <div class="tile-title">ID 1000 câu hỏi Tư duy Toán học</div>
+          <div class="tile-sub">Tra cứu video theo ID</div>
+          <div class="progress"><div class="bar" style="width:1.8%"></div></div>
+          <div class="progress-label">18/1000 câu. Lần cập nhật gần nhất 01/09/2025</div>
+        </a>
+      </section>
+    </main>
+    <script src="assets/config.js" defer></script>
+    <script src="assets/auth.js" defer></script>
+    <script>
+      window.addEventListener('DOMContentLoaded', () => {
+        const badge = document.getElementById('statusBadge');
+        const toggle = document.getElementById('statusToggle');
+        const menu = document.getElementById('statusMenu');
+
+        function hasSession() { return !!(window.Auth && window.Auth.getSession && window.Auth.getSession()); }
+
+        function render() {
+          const loggedIn = hasSession();
+          badge.className = 'badge ' + (loggedIn ? 'premium' : 'free');
+          badge.textContent = loggedIn ? 'Premium' : 'Free';
+          badge.title = loggedIn ? 'Đang đăng nhập (nhấn để đăng xuất)' : 'Nhấn để đăng nhập';
+          badge.onclick = loggedIn
+            ? () => { window.Auth.logout(); window.location.href = 'index.html'; }
+            : () => { window.location.href = 'login.html'; };
+          menu.innerHTML = loggedIn
+            ? '<button class="menu-item btn-sec" id="menuLogout">Đăng xuất</button>'
+            : '<button class="menu-item btn-sec" id="menuLogin">Đăng nhập</button>';
+          const actionBtn = document.getElementById(loggedIn ? 'menuLogout' : 'menuLogin');
+          actionBtn.onclick = loggedIn
+            ? () => { window.Auth.logout(); window.location.href = 'index.html'; }
+            : () => { window.location.href = 'login.html'; };
+        }
+
+        render();
+        toggle.onclick = () => { toggle.classList.toggle('rotate'); menu.classList.toggle('show'); };
+        document.addEventListener('click', (e) => { if (!menu.contains(e.target) && e.target !== toggle) { menu.classList.remove('show'); toggle.classList.remove('rotate'); } });
+      });
+    </script>
+  </body>
+  </html>

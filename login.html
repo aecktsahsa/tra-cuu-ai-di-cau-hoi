@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AECK ID - Đăng nhập</title>
+    <link rel="preconnect" href="https://script.google.com" crossorigin>
+    <link rel="preconnect" href="https://docs.google.com" crossorigin>
+    <link rel="stylesheet" href="assets/style.css" />
+    <link rel="icon" href="assets/logo-square.ico" type="image/x-icon" />
+    <meta property="og:image" content="assets/og-image.png" />
+    <script disable-devtool-auto src="https://cdn.jsdelivr.net/npm/disable-devtool@latest"></script>
+  </head>
+  <body>
+    <main class="container">
+      <h1><img class="logo" src="assets/logo.png" alt="AECK"/></h1>
+      <section class="card">
+        <h2>Đăng nhập</h2>
+        <p style="margin:-4px 0 12px;color:#6b7280">Sử dụng Email và SĐT đăng kí khoá học để đăng nhập.</p>
+        <form id="loginForm">
+          <label>Email
+            <input id="email" type="email" required placeholder="name@gmail.com" />
+          </label>
+          <label>Số điện thoại
+            <input id="phone" type="tel" required placeholder="09xxxxxxxx" />
+          </label>
+          <p style="margin:-2px 0 12px;color:#6b7280">Nếu chưa đăng kí Premium, bạn có thể sử dụng bản Free <a href="index.html" class="link">tại đây</a>.</p>
+          <button type="submit">Đăng nhập</button>
+        </form>
+        <p id="loginMsg" class="msg"></p>
+      </section>
+    </main>
+
+    <script src="assets/config.js" defer></script>
+    <script src="assets/sheets.js" defer></script>
+    <script src="assets/auth.js" defer></script>
+    <script>
+      window.addEventListener('DOMContentLoaded', () => {
+        if (window.Auth?.getSession?.()) {
+          window.location.href = 'index.html';
+          return;
+        }
+
+        const form = document.getElementById('loginForm');
+        const msg = document.getElementById('loginMsg');
+        form.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          msg.textContent = '';
+          const email = document.getElementById('email').value;
+          const phone = document.getElementById('phone').value;
+          form.querySelector('button').disabled = true;
+          try {
+            await window.Auth.login(email, phone);
+            window.location.href = 'index.html';
+          } catch (err) {
+            msg.textContent = err?.message || 'Đăng nhập thất bại';
+          } finally {
+            form.querySelector('button').disabled = false;
+          }
+        });
+      });
+    </script>
+  </body>
+  </html>
